@@ -1,7 +1,35 @@
 package main
 
-import "fmt"
+import (
+	"log"
+	"net/http"
+
+	"bookshelf/internal/config"
+	"bookshelf/internal/repository"
+	"bookshelf/internal/routes"
+)
 
 func main() {
-	fmt.Println("BookShelf API started")
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db, err := repository.NewPostgres(cfg.DatabaseURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	log.Println("Connected to PostgreSQL")
+
+	router := routes.NewRouter()
+
+	addr := ":" + cfg.AppPort
+
+	log.Println("BookShelf API started on", addr)
+
+	if err := http.ListenAndServe(addr, router); err != nil {
+		log.Fatal(err)
+	}
 }
