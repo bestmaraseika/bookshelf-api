@@ -23,7 +23,7 @@ func main() {
 
 	log.Println("Connected to PostgreSQL")
 
-	router := routes.NewRouter()
+	router := routes.NewRouter(db)
 
 	addr := ":" + cfg.AppPort
 
