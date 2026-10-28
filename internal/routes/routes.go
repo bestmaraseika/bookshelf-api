@@ -22,8 +22,10 @@ func NewRouter(db *sql.DB) http.Handler {
 
 	router.Post("/books", bookHandler.CreateBook)
 	router.Get("/books", bookHandler.GetBooks)
+	router.Get("/books/recommend", bookHandler.RecommendBooks)
 	router.Get("/books/{id}", bookHandler.GetBookByID)
 	router.Put("/books/{id}", bookHandler.UpdateBook)
+	router.Post("/books/{id}/mark-out-of-stock", bookHandler.MarkOutOfStock)
 	router.Delete("/books/{id}", bookHandler.DeleteBook)
 
 	return router

@@ -12,6 +12,8 @@ type BookRepository interface {
 	GetAll(ctx context.Context, page, limit int) ([]models.Book, error)
 	Update(ctx context.Context, book *models.Book) error
 	Delete(ctx context.Context, id uint64) error
+	GetRecommended(ctx context.Context, limit int) ([]models.Book, error)
+	MarkOutOfStock(ctx context.Context, id uint64) error
 }
 
 type BookService struct {
@@ -54,4 +56,19 @@ func (s *BookService) Delete(
 	ctx context.Context, id uint64,
 ) error {
 	return s.repo.Delete(ctx, id)
+}
+
+func (s *BookService) Recommend(
+	ctx context.Context,
+) ([]models.Book, error) {
+	const recommendationLimit = 5
+
+	return s.repo.GetRecommended(ctx, recommendationLimit)
+}
+
+func (s *BookService) MarkOutOfStock(
+	ctx context.Context,
+	id uint64,
+) error {
+	return s.repo.MarkOutOfStock(ctx, id)
 }

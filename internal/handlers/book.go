@@ -201,6 +201,53 @@ func (h *BookHandler) DeleteBook(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *BookHandler) RecommendBooks(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	books, err := h.service.Recommend(r.Context())
+	if err != nil {
+		writeJSONError(
+			w,
+			http.StatusInternalServerError,
+			"failed to get recommendations",
+		)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, books)
+}
+
+func (h *BookHandler) MarkOutOfStock(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	rawID := chi.URLParam(r, "id")
+
+	id, err := strconv.ParseUint(rawID, 10, 64)
+	if err != nil || id == 0 || id > 9223372036854775807 {
+		writeJSONError(w, http.StatusBadRequest, "invalid book ID")
+		return
+	}
+
+	err = h.service.MarkOutOfStock(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeJSONError(w, http.StatusNotFound, "book not found")
+			return
+		}
+
+		writeJSONError(
+			w,
+			http.StatusInternalServerError,
+			"failed to mark book out of stock",
+		)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)

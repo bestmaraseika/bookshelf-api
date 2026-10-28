@@ -251,3 +251,95 @@ func (r *BookRepository) Delete(
 
 	return nil
 }
+
+func (r *BookRepository) GetRecommended(
+	ctx context.Context,
+	limit int,
+) ([]models.Book, error) {
+	query := `
+        SELECT
+            id,
+            title,
+            author,
+            year,
+            isbn,
+            out_of_stock,
+            rating,
+            created_at,
+            updated_at
+        FROM books
+        ORDER BY
+            rating DESC NULLS LAST,
+            year DESC,
+            id ASC
+        LIMIT $1
+    `
+
+	rows, err := r.db.QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("get recommended books: %w", err)
+	}
+	defer rows.Close()
+
+	books := make([]models.Book, 0)
+
+	for rows.Next() {
+		var book models.Book
+
+		err := rows.Scan(
+			&book.ID,
+			&book.Title,
+			&book.Author,
+			&book.Year,
+			&book.ISBN,
+			&book.OutOfStock,
+			&book.Rating,
+			&book.CreatedAt,
+			&book.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan recommended book: %w", err)
+		}
+
+		books = append(books, book)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate recommended books: %w", err)
+	}
+
+	return books, nil
+}
+
+func (r *BookRepository) MarkOutOfStock(
+	ctx context.Context,
+	id uint64,
+) error {
+	if id == 0 || id > 9223372036854775807 {
+		return fmt.Errorf("book ID is out of range")
+	}
+
+	query := `
+        UPDATE books
+        SET
+            out_of_stock = TRUE,
+            updated_at = NOW()
+        WHERE id = $1
+    `
+
+	result, err := r.db.ExecContext(ctx, query, int64(id))
+	if err != nil {
+		return fmt.Errorf("mark book out of stock: %w", err)
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("get affected rows: %w", err)
+	}
+
+	if affected == 0 {
+		return fmt.Errorf("mark book out of stock: %w", sql.ErrNoRows)
+	}
+
+	return nil
+}
