@@ -196,7 +196,7 @@ func (r *BookRepository) Update(
             rating = $6,
             updated_at = NOW()
         WHERE id = $7
-        RETURNING updated_at
+        RETURNING created_at, updated_at
     `
 
 	err := r.db.QueryRowContext(
@@ -209,7 +209,10 @@ func (r *BookRepository) Update(
 		book.OutOfStock,
 		book.Rating,
 		int64(book.ID),
-	).Scan(&book.UpdatedAt)
+	).Scan(
+		&book.CreatedAt,
+		&book.UpdatedAt,
+	)
 
 	if err != nil {
 		return fmt.Errorf("update book: %w", err)

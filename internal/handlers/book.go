@@ -6,7 +6,6 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -37,21 +36,18 @@ func (h *BookHandler) CreateBook(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	var req createBookRequest
-
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
-
-	if err := decoder.Decode(&req); err != nil {
-		writeJSONError(w, http.StatusBadRequest, "invalid JSON body")
+	req, err := decodeBookRequest(w, r)
+	if err != nil {
+		handleDecodeError(w, err)
 		return
 	}
 
-	if strings.TrimSpace(req.Title) == "" ||
-		strings.TrimSpace(req.Author) == "" ||
-		req.Year <= 0 ||
-		(req.Rating != nil && (*req.Rating < 1 || *req.Rating > 10)) {
-		writeJSONError(w, http.StatusBadRequest, "invalid book fields")
+	if err := validateBookRequest(req); err != nil {
+		writeJSONError(
+			w,
+			http.StatusBadRequest,
+			err.Error(),
+		)
 		return
 	}
 
@@ -65,7 +61,7 @@ func (h *BookHandler) CreateBook(
 	}
 
 	if err := h.service.Create(r.Context(), book); err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "failed to create book")
+		handleDatabaseError(w, err)
 		return
 	}
 
@@ -91,7 +87,7 @@ func (h *BookHandler) GetBookByID(
 			return
 		}
 
-		writeJSONError(w, http.StatusInternalServerError, "failed to get book")
+		handleDatabaseError(w, err)
 		return
 	}
 
@@ -127,7 +123,7 @@ func (h *BookHandler) GetBooks(w http.ResponseWriter, r *http.Request) {
 
 	books, err := h.service.GetAll(r.Context(), page, limit)
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "failed to get books")
+		handleDatabaseError(w, err)
 		return
 	}
 
@@ -142,21 +138,14 @@ func (h *BookHandler) UpdateBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req createBookRequest
-
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
-
-	if err := decoder.Decode(&req); err != nil {
-		writeJSONError(w, http.StatusBadRequest, "invalid JSON body")
+	req, err := decodeBookRequest(w, r)
+	if err != nil {
+		handleDecodeError(w, err)
 		return
 	}
 
-	if strings.TrimSpace(req.Title) == "" ||
-		strings.TrimSpace(req.Author) == "" ||
-		req.Year <= 0 ||
-		(req.Rating != nil && (*req.Rating < 1 || *req.Rating > 10)) {
-		writeJSONError(w, http.StatusBadRequest, "invalid book fields")
+	if err := validateBookRequest(req); err != nil {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -175,7 +164,7 @@ func (h *BookHandler) UpdateBook(w http.ResponseWriter, r *http.Request) {
 			writeJSONError(w, http.StatusNotFound, "book not found")
 			return
 		}
-		writeJSONError(w, http.StatusInternalServerError, "failed to update book")
+		handleDatabaseError(w, err)
 		return
 	}
 
@@ -194,7 +183,7 @@ func (h *BookHandler) DeleteBook(w http.ResponseWriter, r *http.Request) {
 			writeJSONError(w, http.StatusNotFound, "book not found")
 			return
 		}
-		writeJSONError(w, http.StatusInternalServerError, "failed to delete book")
+		handleDatabaseError(w, err)
 		return
 	}
 
@@ -207,11 +196,7 @@ func (h *BookHandler) RecommendBooks(
 ) {
 	books, err := h.service.Recommend(r.Context())
 	if err != nil {
-		writeJSONError(
-			w,
-			http.StatusInternalServerError,
-			"failed to get recommendations",
-		)
+		handleDatabaseError(w, err)
 		return
 	}
 
@@ -237,11 +222,7 @@ func (h *BookHandler) MarkOutOfStock(
 			return
 		}
 
-		writeJSONError(
-			w,
-			http.StatusInternalServerError,
-			"failed to mark book out of stock",
-		)
+		handleDatabaseError(w, err)
 		return
 	}
 
