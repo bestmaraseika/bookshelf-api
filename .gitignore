@@ -16,3 +16,7 @@
 # OS
 Thumbs.db
 .DS_Store
+
+# Test coverage
+coverage.out
+coverage.html
