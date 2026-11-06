@@ -1,0 +1,26 @@
+# Secrets
+.env
+.env.*
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+
+# Local build artifacts
+*.exe
+*.test
+*.out
+
+# Test coverage
+coverage.out
+coverage.html
+
+# Documentation
+README.md
+
+# Docker configuration
+docker-compose.yml
