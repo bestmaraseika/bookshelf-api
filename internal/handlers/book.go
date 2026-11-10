@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -118,6 +119,11 @@ func (h *BookHandler) GetBooks(w http.ResponseWriter, r *http.Request) {
 
 	if page < 1 || limit < 1 || limit > 100 {
 		writeJSONError(w, http.StatusBadRequest, "invalid pagination")
+		return
+	}
+
+	if int64(page-1) > (math.MaxInt64-int64(limit))/int64(limit) {
+		writeJSONError(w, http.StatusBadRequest, "pagination offset is too large")
 		return
 	}
 

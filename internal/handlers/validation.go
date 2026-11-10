@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"math"
 	"strings"
 )
 
@@ -16,6 +17,10 @@ func validateBookRequest(req createBookRequest) error {
 
 	if req.Year <= 0 {
 		return errors.New("year must be positive")
+	}
+
+	if req.Year > math.MaxInt32 {
+		return errors.New("year exceeds PostgreSQL INTEGER range")
 	}
 
 	if req.ISBN != nil && strings.TrimSpace(*req.ISBN) == "" {
